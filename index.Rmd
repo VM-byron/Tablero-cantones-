@@ -1,0 +1,78 @@
+---
+title: "Tablero-Cantones"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+```{r paquetes}
+library(dplyr)
+library(sf)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(leaflet)
+```
+
+```{r letura de datos}
+cantones <- 
+  st_read(dsn = "cantones_simplificados.geojson", quiet = TRUE) %>%
+  st_transform(4326)
+```
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Mapa
+
+```{r mapa}
+leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = cantones, weight = 1.0)
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Tabla
+
+```{r tabla}
+cantones %>%
+  st_drop_geometry() %>%
+  select(provincia, canton, area) %>% 
+  arrange(desc(area)) %>%
+datatable(
+    colnames = c("Provincia", "Cantón", "Área"),
+    options = list(
+      pageLength = 5,
+      language = list(url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Spanish.json')
+    )
+  )
+
+```
+
+### Gráfico
+
+```{r grafico}
+grafico_ggplot2 <-
+  cantones %>%
+  st_drop_geometry() %>%
+  slice_max(area, n = 8) %>%
+  ggplot(aes(x = reorder(canton, -area), y = area)) +
+  geom_bar(stat = "identity") +
+  xlab("Cantón") +
+  ylab("Área (km2)")
+
+ggplotly(grafico_ggplot2)
+
+```
+
+
+
